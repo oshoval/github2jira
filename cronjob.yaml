@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cron-github
+spec:
+  schedule: "0 */1 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: github
+            image: quay.io/oshoval/github:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; source /app/secret.txt; ./github2jira/create_ticket.py
+            volumeMounts:
+              - name: configs
+                mountPath: /app/secret.txt
+                subPath: secret.txt
+          restartPolicy: Never
+          volumes:
+            - name: configs
+              configMap:
+                name: git-token
