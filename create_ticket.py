@@ -9,20 +9,17 @@ import time
 
 import jiralib
 
-# cfg file name
-cfg_file = 'status.cfg'
 # process upto this x weeks back
 max_delta_weeks = 4
+SECONDS_PER_WEEK = 604800
 # how many tickets can be opened on each cycle
 flood_protection_limit = 3
- 
-jira_token = ""
 
 def check_time(epoch_time_now, created_at, max_delta):
     epoch = int(datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").timestamp())
     return epoch_time_now - epoch < max_delta
 
-def process_issues(owner, repo, query_url, headers):
+def process_issues(jira, repo, query_url, headers):
     issues_created = 0
     epoch_time_now = int(time.time())
 
@@ -53,71 +50,23 @@ def process_issues(owner, repo, query_url, headers):
                     break
             
             if is_network:
-                if jiralib.issue_exists(repo, id) == False:
+                if jiralib.issue_exists(jira, "PG", id) == False:
 
-                    if check_time(epoch_time_now, element["created_at"], max_delta_weeks*604800) == False:
+                    if check_time(epoch_time_now, element["created_at"], max_delta_weeks*SECONDS_PER_WEEK) == False:
                         return
                        
                     print("creating issue for", element["html_url"], title)
-                    """
-                    res = jiralib.create_issue(repo, id, title)
+                    res = jiralib.create_issue(jira, "PG", id, title, "link")
                     if res == True:
                         print(f"issue {id} created")
                         issues_created += 1
                         if issues_created == flood_protection_limit:
                             print("flood protection limit reached, exiting")
                             sys.exit(0)
-                    """
-
-
-def create_issue(jira):
-    issue_dict=dict()
-    issue_dict['project']=dict({'id':'10001'})
-    issue_dict['summary']="[GITHUB:PG-789] Foo"
-    issue_dict['description']="Bla"
-    issue_dict['issuetype']=dict({'name':'Task'})
-
-    issue = jira.create_issue(issue_dict)
-    print(issue)
-
-# works
-def test(jira):
-
-    """
-    # import the installed Jira library
-    from jira import JIRA
-    
-    # Specify a server key. It is your  domain 
-    # name link.
-    jiraOptions = {'server': "https://nmstate.atlassian.net"}
-    
-    # Get a JIRA client instance, Pass 
-    # Authentication parameters
-    # and  Server name.
-    # emailID = your emailID
-    # token = token you receive after registration
-    jira = JIRA(options = jiraOptions, 
-                basic_auth = ("oshoval@redhat.com", jira_token))
-    """
-
-    """
-    # While fetching details of a single issue,
-    # pass its UniqueID or Key.
-    singleIssue = jira.issue('PLAYG-1')
-    print('{}: {}:{}'.format(singleIssue.key,
-                            singleIssue.fields.summary,
-                            singleIssue.fields.reporter.displayName))
-    """
-
-    if True:
-        #create_issue(jira)
-
-        issues = jira.search_issues('project=PLAYG AND text ~ "GITHUB:PG-789"') # also project=Playground worked
-        print(issues) 
-
-
 
 def main():
+    jira = jiralib.init()
+
     token = os.getenv('GITHUB_TOKEN')
 
     if token == None:
@@ -129,174 +78,10 @@ def main():
     query_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
     headers = {'Authorization': f'token {token}'}
 
-    process_issues(owner, repo, query_url, headers)
-
-
-
-def iterateDictIssues(oIssues, listInner):
-
-	# Now,the details for each Issue, maybe
-	# directly accessible, or present further,
-	# in nested dictionary objects.
-	for key, values in oIssues.items():
-		# If key is 'fields', get its value,
-		# to fetch the 'summary' of issue.
-		if(key == "fields"):
-
-			# Since type of object is Json str,
-			# convert to dictionary object.
-			fieldsDict = dict(values)
-
-			# The 'summary' field, we want, is
-			# present in, further,nested dictionary
-			# object. Hence,recursive call to
-			# function 'iterateDictIssues'.
-			iterateDictIssues(fieldsDict, listInner)
-
-		# If key is 'reporter',get its value,
-		# to fetch the 'reporter name' of issue.
-		elif (key == "reporter"):
-
-			# Since type of object is Json str
-			# convert to dictionary object.
-			reporterDict = dict(values)
-
-			# The 'displayName', we want,is present
-			# in,further, nested dictionary object.
-			# Hence,recursive call to function 'iterateDictIssues'.
-			iterateDictIssues(reporterDict, listInner)
-
-		# Issue keyID 'key' is directly accessible.
-		# Get the value of key "key" and append
-		# to temporary list object.
-		elif(key == 'key'):
-			#print(values)
-			keyIssue = values
-			listInner.append(keyIssue)
-
-		# Get the value of key "summary",and,
-		# append to temporary list object, once matched.
-		elif(key == 'summary'):
-			#print(values)            
-			keySummary = values
-			listInner.append(keySummary)
-
-		# Get the value of key "displayName",and,
-		# append to temporary list object,once matched.
-		elif(key == "displayName"):
-			keyReporter = values
-			listInner.append(keyReporter)
-
-
-# works
-def test3():
-    # Import the required libraries
-    import requests
-    from requests.auth import HTTPBasicAuth
-    import json
-    import pandas as pd
-
-    # URL to Search all issues.
-    url = "https://nmstate.atlassian.net/rest/api/2/search"
-
-    # Create an authentication object,using
-    # registered emailID, and, token received.
-    auth = HTTPBasicAuth("oshoval@redhat.com", jira_token)
-
-    # The Header parameter, should mention, the
-    # desired format of data.
-    headers = {
-        "Accept": "application/json"
-    }
-    # Mention the JQL query.
-    # Here, all issues, of a project, are
-    # fetched,as,no criteria is mentioned.
-    query = {
-        'jql': 'project =Playground'
-    }
-
-    # Create a request object with above parameters.
-    response = requests.request(
-        "GET",
-        url,
-        headers=headers,
-        auth=auth,
-        params=query
-    )
-
-    # Get all project issues,by using the
-    # json loads method.
-    projectIssues = json.dumps(json.loads(response.text),
-                            sort_keys=True,
-                            indent=4,
-                            separators=(",", ": "))
-
-    # The JSON response received, using
-    # the requests object,
-    # is an intricate nested object.
-    # Convert the output to a dictionary object.
-    dictProjectIssues = json.loads(projectIssues)
-
-    # We will append,all issues,in a list object.
-    listAllIssues = []
-
-    # The Issue details, we are interested in,
-    # are "Key" , "Summary" and "Reporter Name"
-    keyIssue, keySummary, keyReporter = "", "", ""
-
-    # Iterate through the API output and look
-    # for key 'issues'.
-    for key, value in dictProjectIssues.items():
-
-        # Issues fetched, are present as list elements,
-        # against the key "issues".
-        if(key == "issues"):
-
-            # Get the total number of issues present
-            # for our project.
-            totalIssues = len(value)
-
-            # Iterate through each issue,and,
-            # extract needed details-Key, Summary,
-            # Reporter Name.
-            for eachIssue in range(totalIssues):
-                listInner = []
-
-                # Issues related data,is nested
-                # dictionary object.
-                iterateDictIssues(value[eachIssue], listInner)
-
-                # We append, the temporary list fields,
-                # to a final list.
-                listAllIssues.append(listInner)
-
-    # Prepare a dataframe object,with the final
-    # list of values fetched.
-    dfIssues = pd.DataFrame(listAllIssues, columns=["Reporter",
-                                                    "Summary",
-                                                    "Key"])
-
-    # Reframing the columns to get proper
-    # sequence in output.
-    columnTiles = ["Key", "Summary", "Reporter"]
-    dfIssues = dfIssues.reindex(columns=columnTiles)
-    print(dfIssues)
-    #print(listAllIssues)
-
+    process_issues(jira, repo, query_url, headers)
 
 if __name__ == '__main__':
-    """
-    jira_token = os.getenv('JIRA_TOKEN')
-
-    if jira_token == None:
-        print("Error: cant find JIRA_TOKEN")
-        sys.exit(1)
-    """
-    jira = jiralib.init()
-    test(jira)
-    #test3()
-    
-    #main()
+    main()
 
 
 
