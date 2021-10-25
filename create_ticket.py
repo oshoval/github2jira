@@ -3,39 +3,28 @@
 import requests
 import os
 import json
-import configparser
 import sys
+from datetime import datetime
+import time
 
 import jiralib
 
 # cfg file name
 cfg_file = 'status.cfg'
-# process upto this id in case no status.cfg exists
-last = '6300'
+# process upto this x weeks back
+max_delta_weeks = 4
 # how many tickets can be opened on each cycle
 flood_protection_limit = 3
-
+ 
 jira_token = ""
 
-def init_db(config):
-    global last
-    try:
-        last = config.get('DEFAULT', 'last')
-    except configparser.NoOptionError:
-        print("db doesn't exists, adding initial value")
-        config['DEFAULT']['last'] = last
-        with open(cfg_file, 'w') as configfile:
-            config.write(configfile)
-
-    return last
-
-def update_db(config, last):
-    config['DEFAULT']['last'] = last
-    with open(cfg_file, 'w') as configfile:
-        config.write(configfile)
+def check_time(epoch_time_now, created_at, max_delta):
+    epoch = int(datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").timestamp())
+    return epoch_time_now - epoch < max_delta
 
 def process_issues(owner, repo, query_url, headers):
     issues_created = 0
+    epoch_time_now = int(time.time())
 
     for n in range(1, 20):
         params = {
@@ -57,9 +46,6 @@ def process_issues(owner, repo, query_url, headers):
             if "pull" in html_url:
                 continue
 
-            if id <= int(last):
-                return
-
             is_network = False
             for label in element["labels"]:
                 if label["name"] == "sig/network":
@@ -67,9 +53,13 @@ def process_issues(owner, repo, query_url, headers):
                     break
             
             if is_network:
-                #print(id, element["html_url"], title)
                 if jiralib.issue_exists(repo, id) == False:
+
+                    if check_time(epoch_time_now, element["created_at"], max_delta_weeks*604800) == False:
+                        return
+                       
                     print("creating issue for", element["html_url"], title)
+                    """
                     res = jiralib.create_issue(repo, id, title)
                     if res == True:
                         print(f"issue {id} created")
@@ -77,12 +67,13 @@ def process_issues(owner, repo, query_url, headers):
                         if issues_created == flood_protection_limit:
                             print("flood protection limit reached, exiting")
                             sys.exit(0)
+                    """
 
 
 def create_issue(jira):
     issue_dict=dict()
     issue_dict['project']=dict({'id':'10001'})
-    issue_dict['summary']="[GITHUB:PG-123] Foo"
+    issue_dict['summary']="[GITHUB:PG-789] Foo"
     issue_dict['description']="Bla"
     issue_dict['issuetype']=dict({'name':'Task'})
 
@@ -90,7 +81,9 @@ def create_issue(jira):
     print(issue)
 
 # works
-def test():
+def test(jira):
+
+    """
     # import the installed Jira library
     from jira import JIRA
     
@@ -105,23 +98,26 @@ def test():
     # token = token you receive after registration
     jira = JIRA(options = jiraOptions, 
                 basic_auth = ("oshoval@redhat.com", jira_token))
-    
+    """
+
+    """
     # While fetching details of a single issue,
     # pass its UniqueID or Key.
     singleIssue = jira.issue('PLAYG-1')
     print('{}: {}:{}'.format(singleIssue.key,
                             singleIssue.fields.summary,
                             singleIssue.fields.reporter.displayName))
+    """
 
-    create_issue(jira)
- 
+    if True:
+        #create_issue(jira)
+
+        issues = jira.search_issues('project=PLAYG AND text ~ "GITHUB:PG-789"') # also project=Playground worked
+        print(issues) 
+
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read(cfg_file)
-    last = init_db(config)
-
     token = os.getenv('GITHUB_TOKEN')
 
     if token == None:
@@ -289,14 +285,17 @@ def test3():
 
 
 if __name__ == '__main__':
+    """
     jira_token = os.getenv('JIRA_TOKEN')
 
     if jira_token == None:
         print("Error: cant find JIRA_TOKEN")
         sys.exit(1)
-
-    #test()
-    test3()
+    """
+    jira = jiralib.init()
+    test(jira)
+    #test3()
+    
     #main()
 
 
