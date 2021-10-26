@@ -1,39 +1,43 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 
 from jira import JIRA
 
-def issue_exists(jira, repo, id):
-    query = f'project=PLAYG AND text ~ "GITHUB:{repo}-{id}"'
-    issues = jira.search_issues(query)
-    return len(issues) != 0
+class Jira:
+    def __init__(self, server, email, project, project_id):
+        self.project = project
+        self.project_id = project_id
+        self.server = server
+        
+        jira_token = os.getenv('JIRA_TOKEN')
+        if jira_token == None:
+            print("Error: cant find JIRA_TOKEN")
+            sys.exit(1)
+        
+        jiraOptions = {'server': self.server}
+        self.jira = JIRA(options = jiraOptions, basic_auth = (email, jira_token))
 
-def create_issue(jira, repo, issue_id, title, link):
-    issue_dict=dict()
-    issue_dict['project']=dict({'id':'10001'})
-    issue_dict['summary']=f"[GITHUB:{repo}-{issue_id}] {title}"
-    issue_dict['description']=link
-    issue_dict['issuetype']=dict({'name':'Task'})
+    def issue_exists(self, repo, id):
+        query = f'project={self.project} AND text ~ "GITHUB:{repo}-{id}"'
+        issues = self.jira.search_issues(query)
+        return len(issues) != 0
 
-    issue = jira.create_issue(issue_dict)
-    print(issue) # TODO know to return link to new issue
-    return True
+    def create_issue(self, repo, issue_id, title, body):
+        issue_dict=dict()
+        issue_dict['project']=dict({'id':self.project_id})
+        issue_dict['summary']=f"[GITHUB:{repo}-{issue_id}] {title}"
+        issue_dict['description']=body
+        issue_dict['issuetype']=dict({'name':'Task'})
 
-def init():
-    jira_token = os.getenv('JIRA_TOKEN')
-    if jira_token == None:
-        print("Error: cant find JIRA_TOKEN")
-        sys.exit(1)
-    
-    jiraOptions = {'server': "https://nmstate.atlassian.net"}
-    jira = JIRA(options = jiraOptions, 
-                basic_auth = ("oshoval@redhat.com", jira_token))
-
-    return jira
-
+        issue = self.jira.create_issue(issue_dict)
+        return issue
+                
 def main():
-    print("hello jira")
+    print("jiralib")
+    jira = Jira("https://nmstate.atlassian.net", "oshoval@redhat.com", "PLAYG" , "10001")
+    print(jira.issue_exists("kubevirt", "6500"))
 
 if __name__ == '__main__':
     main()
