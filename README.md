@@ -1,5 +1,8 @@
 # github2jira
-Scrap github issues and create Jira tickets
+github2jira automates mirroring of github issues to Jira tickets.
+
+The tool scans github for issues that match the desired criteria,
+and for each one of them creates a Jira ticket (unless it already exists).
 
 ## One time configuration
 1. Create github token https://github.com/settings/tokens, refer it as `GITHUB_TOKEN`
@@ -26,11 +29,22 @@ export GITHUB_TOKEN=<..> # see "One time configuration" section
 
 2. Run `./create_ticket.py` in order to fetch github issues and create a ticket for them
 
+### Additional settings
+
+`dryrun`: Use `./create_ticket.py --dryrun` in order to run the tool in dryrun mode.
+dryrun mode will fetch github issues, and report what Jira tickets it would create,
+but without creating them.
+
 ## Running as k8s payload
+
+In order to have a fully automated mirroring process,
+it is suggested to run the tool as a cron jon.
+
+One of the methods to achieve it, is to run it as k8s CronJob payload.
 
 ### One time configuration: Build docker image for the script
 
-1. Run `docker build -f Dockerfile -t <image> .`  
+1. From the project folder, run `docker build -f Dockerfile -t <image> .`  
 once its done, push it to your image repository, or rename and push to a local registry.
 
 ### Deploy as k8s payload

@@ -20,7 +20,7 @@ spec:
                 - |
                   source /app/secret.txt
                   git clone https://github.com/oshoval/github2jira.git
-                  ./github2jira/create_ticket.py
+                  ./github2jira/main.py
               volumeMounts:
                 - name: configs
                   mountPath: /app/secret.txt

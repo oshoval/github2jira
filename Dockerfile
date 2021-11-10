@@ -1,12 +1,10 @@
-FROM fedora
+FROM fedora:32
 
-# Install packages
-RUN dnf install -y python3 \
-    git \
-    pip
+RUN dnf install -y python3 git pip \
+    && dnf clean all \
+    && rm -rf /var/cache/yum
 
-RUN pip install requests
-RUN pip install jira
+RUN pip install requests jira
 
-CMD [“echo”, “Hello World!”]
+CMD [“echo”, “Hello World”]
 
