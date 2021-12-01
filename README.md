@@ -27,8 +27,8 @@ export JIRA_TOKEN=<..> # see "One time configuration" section
 export GITHUB_TOKEN=<..> # see "One time configuration" section
 ```
 
-For Jira basic auth set JIRA_USERNAME=<USER>, JIRA_TOKEN<PASSWORD/TOKEN>  
-For Jira Personal Access Token set JIRA_USERNAME="", JIRA_TOKEN=<PAT>
+For Jira basic auth set `JIRA_USERNAME=<USER>`, `JIRA_TOKEN<PASSWORD/TOKEN>`  
+For Jira Personal Access Token set `JIRA_USERNAME=""`, `JIRA_TOKEN=<PAT>`
 
 2. Run `./main.py` in order to fetch github issues and create a ticket for them
 
