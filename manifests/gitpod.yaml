@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: github
+  namespace: default
+spec:
+  containers:
+    - image: quay.io/oshoval/github:latest
+      name: github
+      command:
+        - /bin/bash
+        - -c
+        - sleep infinity
+      volumeMounts:
+        - name: configs
+          mountPath: /app/secret.txt
+          subPath: secret.txt
+  volumes:
+    - name: configs
+      configMap:
+        name: git-token
