@@ -58,7 +58,39 @@ once its done, push it to your image repository, or rename and push to a local r
 
 1. Create secret.txt with the exports from the section above (include the export command).
 
-2. Create a configmap for the txt file
-`kubectl create configmap git-token --from-file=secret.txt`
+2. Create a configmap or a secret with the needed variables.
 
-3. Deploy either a pod or a CronJob (see manifests folder).
+configmap:
+
+`kubectl create configmap github2jira-secret --from-file=secret.txt`  
+Where secret.txt is a file in the format (see section above)
+```
+export JIRA_SERVER=<..>
+```
+
+secret:
+
+Create a secret in the format:
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github2jira-secret
+type: Opaque
+data:
+  # list of all the env vars in the format:
+  # ENV_VAR_NAME:BASE64_VALUE
+```
+
+Note:
+In order to ease base64 encoding you can use the following command  
+`cat secret.in | awk -F= '{printf("  "$1": "); system("echo -n " $2"| base64")}'`  
+where `secret.in` is a list of `NAME=VALUE`, one per line.  
+Empty lines are not allowed.  
+The character `=` is not allowed as part of the VALUE.
+
+It will print the data section that you can use as part of your secret.
+
+3. Deploy either a pod or a CronJob (see [manifests](manifests) folder).  
+There are two types of CronJobs, one for configmap and one for secret.
+
