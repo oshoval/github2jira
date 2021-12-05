@@ -39,7 +39,6 @@ def test_ticketmanager_create():
     raw_issue["html_url"] = "dummy"
     git_issue = Issue(raw_issue)
 
-    issues_created = 0
     for i in range(FLOOD_PROTECTION_LIMIT * 3):
         ticket_manager.create(git_issue)
 
