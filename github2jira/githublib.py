@@ -106,9 +106,9 @@ class Github:
             if "pull" in issue.url:
                 continue
 
-            if self.expected_label in issue.labels and issue_in_time_window(
-                issue, MAX_DELTA_WEEKS
-            ):
+            if (
+                self.expected_label == "" or self.expected_label in issue.labels
+            ) and issue_in_time_window(issue, MAX_DELTA_WEEKS):
                 yield issue
 
     def _open_issues(self):
